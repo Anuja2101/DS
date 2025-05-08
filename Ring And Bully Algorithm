@@ -128,9 +128,13 @@ public class RingLeaderElection{
 }
 
 Command To run:-
-1)Compile the program:-
+1)Install:-
+sudo apt update
+sudo apt install default-jdk -y
+
+2)Compile the program:-
 javac LeaderElection.java
 javac RingLeaderElection.java
-2)Run the program:-
+3)Run the program:-
 java LeaderElection
 java RingLeaderElection
