@@ -1,4 +1,4 @@
-Client.java
+1)Client.java
 import java.rmi.*;
 import java.util.Scanner;
 
@@ -22,7 +22,7 @@ public class Client {
 }
 
 
-Server.java
+2)Server.java
 import java.rmi.*;
 import java.net.*;
 
@@ -38,14 +38,14 @@ public class Server {
 }
 
 
-ServerInterface.java
+3)ServerInterface.java
 import java.rmi.*;
 
 public interface ServerInterface extends Remote {
     String concat(String a, String b) throws RemoteException;
 }
 
-Servant.java
+4)Servant.java
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.*;
