@@ -1,0 +1,63 @@
+#include <stdio.h>
+#include <mpi.h>
+
+#define N 10  // Total number of elements
+
+int main(int argc, char* argv[]) {
+    int rank, size, local_data[1000], num_recv, sum = 0;
+    int array[N] = {1,2,3,4,5,6,7,8,9,10};
+   
+    MPI_Init(&argc, &argv); // Initialize MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // Get current process rank
+    MPI_Comm_size(MPI_COMM_WORLD, &size); // Get total number of processes
+   
+    int chunk = N / size;  // Minimum number of elements per process
+
+    if (rank == 0) {
+        // Master process sends chunks of array to other processes
+        for (int i = 1; i < size; i++) {
+            int start = i * chunk;
+            int count = (i == size - 1) ? (N - start) : chunk;
+            MPI_Send(&count, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&array[start], count, MPI_INT, i, 0, MPI_COMM_WORLD);
+            printf("Master sent %d elements to process %d\n", count, i);
+        }
+
+        // Master computes sum of its own portion
+        for (int i = 0; i < chunk; i++) {
+            sum += array[i];
+        }
+        printf("Master process (rank %d) partial sum: %d\n", rank, sum);
+
+        // Master receives partial sums from all other processes
+        int temp;
+        for (int i = 1; i < size; i++) {
+            MPI_Recv(&temp, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            printf("Master received partial sum %d from process %d\n", temp, i);
+            sum += temp;
+        }
+        printf("Final Total Sum: %d\n", sum);
+    }
+    else {
+        // Worker processes receive data and compute local sums
+        MPI_Recv(&num_recv, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(local_data, num_recv, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        int local_sum = 0;
+        for (int i = 0; i < num_recv; i++) {
+            local_sum += local_data[i];
+        }
+        printf("Process %d received %d elements, partial sum: %d\n", rank, num_recv, local_sum);
+        MPI_Send(&local_sum, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+    }
+
+    MPI_Finalize(); // Finalize MPI
+    return 0; 
+}
+
+Command to run:-
+1)mpicc Assignment3.c -o Assignment3
+2)if mpic lib is not found then install this lib:-
+sudo apt update
+sudo apt install mpich
+3) mpirun -np 4 ./Assignment3
