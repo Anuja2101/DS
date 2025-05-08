@@ -1,0 +1,84 @@
+ClockServer.py
+import socket, threading, datetime, time
+from dateutil import parser
+
+client_data = {}
+
+def handle_client(conn, addr):
+    while True:
+        clock = parser.parse(conn.recv(1024).decode())
+        diff = datetime.datetime.now() - clock
+        client_data[addr] = {"clock": clock, "diff": diff, "conn": conn}
+        print(f"Updated client: {addr}\n")
+        time.sleep(5)
+
+def accept_clients(server):
+    while True:
+        conn, addr = server.accept()
+        addr_str = f"{addr[0]}:{addr[1]}"
+        print(f"{addr_str} connected")
+        threading.Thread(target=handle_client, args=(conn, addr_str)).start()
+
+def get_avg_diff():
+    if not client_data: return datetime.timedelta()
+    total = sum((c["diff"] for c in client_data.values()), datetime.timedelta())
+    return total / len(client_data)
+
+def sync_clocks():
+    while True:
+        print(f"\nSync cycle started. Clients: {len(client_data)}")
+        if client_data:
+            avg = get_avg_diff()
+            for addr, c in client_data.items():
+                try:
+                    c["conn"].send(str(datetime.datetime.now() + avg).encode())
+                except:
+                    print(f"Failed to sync with {addr}")
+        else:
+            print("No clients connected.")
+        time.sleep(5)
+
+def start_server(port=8080):
+    server = socket.socket()
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(('', port))
+    server.listen(10)
+    print("Clock server running...\n")
+    threading.Thread(target=accept_clients, args=(server,)).start()
+    threading.Thread(target=sync_clocks).start()
+
+if __name__ == '__main__':
+    start_server()
+
+Clockclient.py
+import socket, threading, datetime, time
+from dateutil import parser
+
+def send_time(sock):
+    while True:
+        sock.send(str(datetime.datetime.now()).encode())
+        print("Time sent\n")
+        time.sleep(5)
+
+def receive_time(sock):
+    while True:
+        synced = parser.parse(sock.recv(1024).decode())
+        print(f"Synchronized time: {synced}\n")
+
+def start_client(port=8080):
+    sock = socket.socket()
+    sock.connect(('127.0.0.1', port))
+    print("Connected to server\n")
+    threading.Thread(target=send_time, args=(sock,)).start()
+    threading.Thread(target=receive_time, args=(sock,)).start()
+
+if __name__ == '__main__':
+    start_client()
+
+Command to run:-
+1)Install this first lib:-
+sudo apt update
+sudo apt install python3 python3-pip -y
+pip3 install python-dateutil
+2)python3 ClockServer.py //run on first terminal
+3)python3 ClockClient.py //run on another terminal
